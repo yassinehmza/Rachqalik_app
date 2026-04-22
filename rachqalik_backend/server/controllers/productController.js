@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Product = require('../models/Product');
 
 const getProducts = async (req, res, next) => {
@@ -14,6 +15,26 @@ const getProducts = async (req, res, next) => {
   }
 };
 
+const getProductById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid product id' });
+    }
+
+    const product = await Product.findById(id);
+
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    return res.status(200).json({ success: true, data: product });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const createProduct = async (req, res, next) => {
   try {
     const { name, price, description, image, stock } = req.body;
@@ -21,7 +42,7 @@ const createProduct = async (req, res, next) => {
     if (!name || typeof price !== 'number' || !description || typeof stock !== 'number') {
       return res.status(400).json({
         success: false,
-        message: 'name, price, description and stock are required',
+        message: 'name, price (number), description and stock (number) are required',
       });
     }
 
@@ -43,4 +64,24 @@ const createProduct = async (req, res, next) => {
   }
 };
 
-module.exports = { getProducts, createProduct };
+const deleteProduct = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid product id' });
+    }
+
+    const product = await Product.findByIdAndDelete(id);
+
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    return res.status(200).json({ success: true, message: 'Product deleted successfully', data: product });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getProducts, getProductById, createProduct, deleteProduct };

@@ -1,328 +1,1382 @@
 {
   "info": {
     "_postman_id": "a7af1473-bac3-4d29-8f80-7e0af95f6590",
-    "name": "Rachqalik Backend API",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Collection Postman pour tester le backend Rachqalik"
+    "name": "Rachqalik API",
+    "description": "Complete REST API for the Rachqalik sleep platform.\n\nBase URL: http://localhost:5000\n\n---\n\n**Authentication**\nMost endpoints require a Bearer token in the Authorization header.\nRun \"Login\" or \"Admin Login\" first — the token is saved automatically as a collection variable.\n\n**Workflow to get started:**\n1. Run \"Login\" to set `token` and `userId`\n2. Run \"Admin Login\" to set `adminToken`\n3. Run \"Get All Products\" to set `productId`\n4. Run \"Create Order\" to set `orderId`\n\n**Plans and access:**\n- `free` users have a 15-day trial to use sleep tracking\n- `premium` users have unlimited access\n- `admin` role required for product and order management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Health",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/health",
-          "host": [
-            "{{baseUrl}}"
+      "name": "System",
+      "description": "Health and availability checks.",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            },
+            "description": "Returns 200 if the API server is running and reachable. No authentication required. Use this to confirm the server is up before running other requests."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Server is healthy', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
           ],
-          "path": [
-            "api",
-            "health"
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/health",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "health"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"API is running\"\n}"
+            }
           ]
         }
-      },
-      "response": []
+      ]
     },
     {
       "name": "Auth",
+      "description": "User registration, login, profile management, plan upgrade, and password reset.\n\nAll protected endpoints require: `Authorization: Bearer {{token}}`",
       "item": [
         {
           "name": "Register",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status code is 201 or 409', function () {",
-                  "    pm.expect([201, 409]).to.include(pm.response.code);",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Postman User\",\n  \"email\": \"postman_{{$timestamp}}@rachqalik.com\",\n  \"password\": \"Password123!\"\n}"
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/register",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "register"
-              ]
-            }
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Creates a new user account.\n\n**Validation rules:**\n- `name`: minimum 2 characters\n- `email`: must be a valid email format, must be unique\n- `password`: minimum 8 characters\n\nNew accounts start on the `free` plan with a 15-day sleep tracking trial.\n\nReturns a JWT token valid for 7 days."
           },
-          "response": []
-        },
-        {
-          "name": "Login",
           "event": [
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status code is 200', function () {",
-                  "    pm.response.to.have.status(200);",
+                  "pm.test('Status is 201 or 409', function () {",
+                  "    pm.expect([201, 409]).to.include(pm.response.code);",
                   "});",
-                  "const json = pm.response.json();",
-                  "if (json && json.data && json.data.token) {",
-                  "    pm.collectionVariables.set('token', json.data.token);",
-                  "}",
-                  "if (json && json.data && json.data.user && json.data.user.id) {",
-                  "    pm.collectionVariables.set('userId', json.data.user.id);",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.test('Response has token and user', function () {",
+                  "        pm.expect(json.data).to.have.property('token');",
+                  "        pm.expect(json.data).to.have.property('user');",
+                  "        pm.expect(json.data.user.plan).to.equal('free');",
+                  "    });",
                   "}"
-                ],
-                "type": "text/javascript"
+                ]
               }
             }
           ],
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+                },
+                "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"User registered successfully\",\n  \"data\": {\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"user\": {\n      \"id\": \"69e81cf84a978fb796e6df7f\",\n      \"name\": \"Test User\",\n      \"email\": \"test@example.com\",\n      \"plan\": \"free\",\n      \"role\": \"user\",\n      \"createdAt\": \"2026-04-22T00:57:28.213Z\"\n    }\n  }\n}"
+            },
+            {
+              "name": "400 Validation Error",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"A\",\n  \"email\": \"test@example.com\",\n  \"password\": \"123\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Name must be at least 2 characters long\"\n}"
+            },
+            {
+              "name": "409 Email Already in Use",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Email is already in use\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{loginEmail}}\",\n  \"password\": \"{{loginPassword}}\"\n}"
+              "raw": "{\n  \"email\": \"{{loginEmail}}\",\n  \"password\": \"{{loginPassword}}\"\n}",
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "login"
-              ]
-            }
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Authenticates a user and returns a JWT token.\n\nOn success, the test script automatically saves:\n- `token` — used by all protected user endpoints\n- `userId` — used for order and sleep history requests\n\nThe token is valid for 7 days. Passwords are compared using bcrypt."
           },
-          "response": []
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "",
+                  "if (json && json.data && json.data.token) {",
+                  "    pm.collectionVariables.set('token', json.data.token);",
+                  "    pm.test('Token saved', function () {",
+                  "        pm.expect(pm.collectionVariables.get('token')).to.not.be.empty;",
+                  "    });",
+                  "}",
+                  "",
+                  "if (json && json.data && json.data.user) {",
+                  "    pm.collectionVariables.set('userId', json.data.user.id);",
+                  "    pm.test('User ID saved', function () {",
+                  "        pm.expect(pm.collectionVariables.get('userId')).to.not.be.empty;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"user\": {\n      \"id\": \"69e81cf84a978fb796e6df7f\",\n      \"name\": \"Test User\",\n      \"email\": \"test@example.com\",\n      \"plan\": \"premium\",\n      \"role\": \"user\",\n      \"createdAt\": \"2026-04-22T00:57:28.213Z\"\n    }\n  }\n}"
+            },
+            {
+              "name": "401 Invalid Credentials",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"wrongpassword\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Invalid email or password\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Logs in with an admin account.\n\nOn success, saves `adminToken` automatically. Use `adminToken` for any endpoint that requires admin access (creating/deleting products, updating order status).\n\nTo create an admin account locally, run:\n```\nnode server/config/createAdmin.js\n```\nDefault credentials: admin@example.com / admin1234"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "",
+                  "if (json && json.data && json.data.token) {",
+                  "    pm.collectionVariables.set('adminToken', json.data.token);",
+                  "    pm.test('Admin token saved', function () {",
+                  "        pm.expect(pm.collectionVariables.get('adminToken')).to.not.be.empty;",
+                  "    });",
+                  "}",
+                  "",
+                  "if (json && json.data && json.data.user) {",
+                  "    pm.test('Role is admin', function () {",
+                  "        pm.expect(json.data.user.role).to.equal('admin');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin1234\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"user\": {\n      \"id\": \"69e81d41365ddc3656e18ecc\",\n      \"name\": \"Admin\",\n      \"email\": \"admin@example.com\",\n      \"plan\": \"premium\",\n      \"role\": \"admin\",\n      \"createdAt\": \"2026-04-22T00:58:41.000Z\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Returns the profile of the currently authenticated user.\n\nUsed by the frontend on page load to verify the token is still valid and retrieve up-to-date user data (name, plan, role).\n\nRequires: `Authorization: Bearer {{token}}`"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response contains user data', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.data).to.have.all.keys('id', 'name', 'email', 'plan', 'role', 'createdAt');",
+                  "    pm.expect(json.data.id).to.equal(pm.collectionVariables.get('userId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "auth", "me"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"69e81cf84a978fb796e6df7f\",\n    \"name\": \"Test User\",\n    \"email\": \"test@example.com\",\n    \"plan\": \"premium\",\n    \"role\": \"user\",\n    \"createdAt\": \"2026-04-22T00:57:28.213Z\"\n  }\n}"
+            },
+            {
+              "name": "401 No Token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/auth/me", "host": ["{{baseUrl}}"], "path": ["api", "auth", "me"] }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Not authorized, token missing\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"password\": \"newpassword123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "profile"]
+            },
+            "description": "Updates the name and/or password of the authenticated user.\n\nBoth fields are optional — send only what you want to change.\n- Omit `name` to keep the current name\n- Omit `password` to keep the current password\n\nAt least one field must be provided.\n\n**Validation:**\n- `name`: minimum 2 characters\n- `password`: minimum 8 characters (will be hashed before saving)\n\nRequires: `Authorization: Bearer {{token}}`"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Profile updated successfully', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "    pm.expect(json.message).to.equal('Profile updated successfully');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK — Name Updated",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Name\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/auth/profile", "host": ["{{baseUrl}}"], "path": ["api", "auth", "profile"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Profile updated successfully\",\n  \"data\": {\n    \"id\": \"69e81cf84a978fb796e6df7f\",\n    \"name\": \"Updated Name\",\n    \"email\": \"test@example.com\",\n    \"plan\": \"premium\",\n    \"role\": \"user\",\n    \"createdAt\": \"2026-04-22T00:57:28.213Z\"\n  }\n}"
+            },
+            {
+              "name": "400 Nothing to Update",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{}" },
+                "url": { "raw": "{{baseUrl}}/api/auth/profile", "host": ["{{baseUrl}}"], "path": ["api", "auth", "profile"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Provide name or password to update\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Upgrade to Premium",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/upgrade",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "upgrade"]
+            },
+            "description": "Upgrades the authenticated user's plan from `free` to `premium`.\n\nThis endpoint has no request body — simply call it with a valid token.\nIn production this would be gated behind a payment confirmation step.\n\nOnce upgraded, the 15-day trial limit is removed and sleep tracking is available indefinitely.\n\nReturns 400 if the user is already on the premium plan.\n\nRequires: `Authorization: Bearer {{token}}`"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200 or 400', function () {",
+                  "    pm.expect([200, 400]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Plan is now premium', function () {",
+                  "        const json = pm.response.json();",
+                  "        pm.expect(json.data.plan).to.equal('premium');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK — Upgraded",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": { "raw": "{{baseUrl}}/api/auth/upgrade", "host": ["{{baseUrl}}"], "path": ["api", "auth", "upgrade"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Upgraded to premium successfully\",\n  \"data\": {\n    \"id\": \"69e81cf84a978fb796e6df7f\",\n    \"name\": \"Test User\",\n    \"email\": \"test@example.com\",\n    \"plan\": \"premium\",\n    \"role\": \"user\",\n    \"createdAt\": \"2026-04-22T00:57:28.213Z\"\n  }\n}"
+            },
+            {
+              "name": "400 Already Premium",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": { "raw": "{{baseUrl}}/api/auth/upgrade", "host": ["{{baseUrl}}"], "path": ["api", "auth", "upgrade"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Already on premium plan\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"newPassword\": \"password123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "forgot-password"]
+            },
+            "description": "Resets a user's password directly by email.\n\nNo authentication required. In a production environment this would trigger an email with a time-limited reset link. For local development it resets the password immediately.\n\nThe response does not reveal whether the email exists in the database — both found and not-found return 200 to prevent user enumeration.\n\n**Validation:**\n- `email`: must be a valid email format\n- `newPassword`: minimum 8 characters"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is successful', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK — Password Reset",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"newPassword\": \"password123\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["api", "auth", "forgot-password"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Password reset successfully\"\n}"
+            },
+            {
+              "name": "200 OK — Email Not Found (no leak)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"email\": \"ghost@example.com\",\n  \"newPassword\": \"password123\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["api", "auth", "forgot-password"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"If that email exists, the password has been reset\"\n}"
+            },
+            {
+              "name": "400 Weak Password",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"newPassword\": \"123\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["api", "auth", "forgot-password"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"New password must be at least 8 characters\"\n}"
+            }
+          ]
         }
       ]
     },
     {
       "name": "Products",
+      "description": "Product catalog management.\n\n- `GET /` and `GET /:id` are public — no token required\n- `POST /` and `DELETE /:id` require admin access (`adminToken`)",
       "item": [
         {
-          "name": "Get Products",
+          "name": "Get All Products",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/products",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "products"
-              ]
-            }
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"]
+            },
+            "description": "Returns the full product catalog sorted by creation date (newest first).\n\nNo authentication required. The test script saves the ID of the first returned product as `productId` for use in subsequent requests.\n\nTo seed the database with sample products run:\n```\nnpm run seed\n```"
           },
-          "response": []
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test('Response has count and data array', function () {",
+                  "    pm.expect(json).to.have.property('count');",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "});",
+                  "",
+                  "if (json.data && json.data.length > 0) {",
+                  "    pm.collectionVariables.set('productId', json.data[0]._id);",
+                  "    pm.test('Product ID saved: ' + json.data[0]._id, function () {",
+                  "        pm.expect(pm.collectionVariables.get('productId')).to.not.be.empty;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/products", "host": ["{{baseUrl}}"], "path": ["api", "products"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"count\": 3,\n  \"data\": [\n    {\n      \"_id\": \"69e81d17f3845bd53773ac66\",\n      \"name\": \"Rachqalik Smart Pillow Lite\",\n      \"price\": 79.99,\n      \"description\": \"Comfort-focused smart pillow with basic sleep tracking support.\",\n      \"image\": \"https://images.unsplash.com/photo-1567446537708-ac4aa75c9c28\",\n      \"stock\": 118,\n      \"createdAt\": \"2026-04-22T00:57:59.172Z\",\n      \"updatedAt\": \"2026-04-22T00:59:03.668Z\"\n    },\n    {\n      \"_id\": \"69e81d17f3845bd53773ac67\",\n      \"name\": \"Rachqalik Smart Pillow Pro\",\n      \"price\": 129.99,\n      \"description\": \"Premium smart pillow with advanced sensors and temperature control.\",\n      \"image\": \"https://images.unsplash.com/photo-1584100936595-c0654b55a2e2\",\n      \"stock\": 80,\n      \"createdAt\": \"2026-04-22T00:57:59.172Z\",\n      \"updatedAt\": \"2026-04-22T00:57:59.172Z\"\n    },\n    {\n      \"_id\": \"69e81d17f3845bd53773ac68\",\n      \"name\": \"Rachqalik Cloud Pillow\",\n      \"price\": 59.99,\n      \"description\": \"Ultra-soft ergonomic pillow designed for deep and restorative sleep.\",\n      \"image\": \"https://images.unsplash.com/photo-1631049035326-57414f9653ef\",\n      \"stock\": 150,\n      \"createdAt\": \"2026-04-22T00:57:59.172Z\",\n      \"updatedAt\": \"2026-04-22T00:57:59.172Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "{{productId}}"]
+            },
+            "description": "Returns a single product by its MongoDB ObjectId.\n\nNo authentication required.\n\nReturns 400 if the ID format is invalid, and 404 if no product exists with that ID."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Product data is returned', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.data).to.have.all.keys('_id', 'name', 'price', 'description', 'image', 'stock', 'createdAt', 'updatedAt');",
+                  "    pm.expect(json.data._id).to.equal(pm.collectionVariables.get('productId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["api", "products", "{{productId}}"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"_id\": \"69e81d17f3845bd53773ac66\",\n    \"name\": \"Rachqalik Smart Pillow Lite\",\n    \"price\": 79.99,\n    \"description\": \"Comfort-focused smart pillow with basic sleep tracking support.\",\n    \"image\": \"https://images.unsplash.com/photo-1567446537708-ac4aa75c9c28\",\n    \"stock\": 118,\n    \"createdAt\": \"2026-04-22T00:57:59.172Z\",\n    \"updatedAt\": \"2026-04-22T00:59:03.668Z\"\n  }\n}"
+            },
+            {
+              "name": "400 Invalid ID",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/products/not-a-valid-id", "host": ["{{baseUrl}}"], "path": ["api", "products", "not-a-valid-id"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Invalid product id\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/products/507f1f77bcf86cd799439011", "host": ["{{baseUrl}}"], "path": ["api", "products", "507f1f77bcf86cd799439011"] }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Product not found\"\n}"
+            }
+          ]
         },
         {
           "name": "Create Product (Admin)",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Rachqalik Smart Pillow X\",\n  \"price\": 149.99,\n  \"description\": \"New smart pillow from Postman test\",\n  \"image\": \"https://example.com/pillow.jpg\",\n  \"stock\": 25\n}"
+              "raw": "{\n  \"name\": \"Rachqalik Smart Pillow X\",\n  \"price\": 149.99,\n  \"description\": \"Next-generation smart pillow with AI-powered sleep analysis.\",\n  \"image\": \"https://images.unsplash.com/photo-1567446537708-ac4aa75c9c28\",\n  \"stock\": 50\n}",
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{baseUrl}}/api/products",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "products"
-              ]
-            }
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"]
+            },
+            "description": "Creates a new product. Admin access only.\n\n**Required fields:**\n- `name` (string)\n- `price` (number)\n- `description` (string)\n- `stock` (number)\n\n**Optional fields:**\n- `image` (string URL) — defaults to empty string\n\nRequires: `Authorization: Bearer {{adminToken}}`\n\nReturns 403 if the token belongs to a non-admin user."
           },
-          "response": []
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data._id) {",
+                  "    pm.collectionVariables.set('newProductId', json.data._id);",
+                  "    pm.test('New product ID saved for delete test', function () {",
+                  "        pm.expect(pm.collectionVariables.get('newProductId')).to.not.be.empty;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Rachqalik Smart Pillow X\",\n  \"price\": 149.99,\n  \"description\": \"Next-generation smart pillow.\",\n  \"stock\": 50\n}" },
+                "url": { "raw": "{{baseUrl}}/api/products", "host": ["{{baseUrl}}"], "path": ["api", "products"] }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Product created successfully\",\n  \"data\": {\n    \"_id\": \"69e81d4b44a5a1eb74f45a17\",\n    \"name\": \"Rachqalik Smart Pillow X\",\n    \"price\": 149.99,\n    \"description\": \"Next-generation smart pillow.\",\n    \"image\": \"\",\n    \"stock\": 50,\n    \"createdAt\": \"2026-04-22T00:58:51.535Z\",\n    \"updatedAt\": \"2026-04-22T00:58:51.535Z\"\n  }\n}"
+            },
+            {
+              "name": "400 Missing Required Fields",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Missing Fields\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/products", "host": ["{{baseUrl}}"], "path": ["api", "products"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"name, price (number), description and stock (number) are required\"\n}"
+            },
+            {
+              "name": "403 Not Admin",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test\",\n  \"price\": 10,\n  \"description\": \"test\",\n  \"stock\": 1\n}" },
+                "url": { "raw": "{{baseUrl}}/api/products", "host": ["{{baseUrl}}"], "path": ["api", "products"] }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Forbidden: admin access required\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Product (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/{{newProductId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "{{newProductId}}"]
+            },
+            "description": "Permanently deletes a product by ID. Admin access only.\n\nThe deleted product data is returned in the response so you can confirm what was removed.\n\nReturns 400 for an invalid ID format, 404 if the product does not exist, and 403 for non-admin tokens.\n\nRequires: `Authorization: Bearer {{adminToken}}`\n\nNote: The variable `{{newProductId}}` is auto-set by the \"Create Product\" test script."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Deleted product returned', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "    pm.expect(json.data).to.have.property('_id');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK — Deleted",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": { "raw": "{{baseUrl}}/api/products/{{newProductId}}", "host": ["{{baseUrl}}"], "path": ["api", "products", "{{newProductId}}"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Product deleted successfully\",\n  \"data\": {\n    \"_id\": \"69e81d4b44a5a1eb74f45a17\",\n    \"name\": \"Rachqalik Smart Pillow X\",\n    \"price\": 149.99,\n    \"description\": \"Next-generation smart pillow.\",\n    \"image\": \"\",\n    \"stock\": 50,\n    \"createdAt\": \"2026-04-22T00:58:51.535Z\",\n    \"updatedAt\": \"2026-04-22T00:58:51.535Z\"\n  }\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+                "url": { "raw": "{{baseUrl}}/api/products/507f1f77bcf86cd799439011", "host": ["{{baseUrl}}"], "path": ["api", "products", "507f1f77bcf86cd799439011"] }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Product not found\"\n}"
+            }
+          ]
         }
       ]
     },
     {
       "name": "Orders",
+      "description": "Order creation and management.\n\n- Creating an order validates that all products exist and have sufficient stock, then decrements stock automatically\n- Users can only view their own orders\n- Admins can view any user's orders and update order status",
       "item": [
         {
           "name": "Create Order",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"products\": [\n    {\n      \"productId\": \"{{sampleProductId}}\",\n      \"name\": \"Rachqalik Smart Pillow Lite\",\n      \"quantity\": 1,\n      \"price\": 79.99\n    }\n  ],\n  \"total\": 79.99,\n  \"status\": \"pending\"\n}"
+              "raw": "{\n  \"products\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"name\": \"Rachqalik Smart Pillow Lite\",\n      \"quantity\": 1,\n      \"price\": 79.99\n    }\n  ],\n  \"total\": 79.99\n}",
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{baseUrl}}/api/orders",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "orders"
-              ]
-            }
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders"]
+            },
+            "description": "Creates a new order for the authenticated user.\n\n**Required fields:**\n- `products` (array, min 1 item): each item must include `productId`, `name`, `quantity`, `price`\n- `total` (number): total order value in currency units\n\n**Optional fields:**\n- `status` (string): defaults to `pending`. Accepted values: `pending`, `paid`, `shipped`\n\n**Stock validation:**\nBefore saving, the server verifies that all `productId` values exist and that each product has enough stock. If validation passes, stock is decremented for each product in the order.\n\nRequires: `Authorization: Bearer {{token}}`"
           },
-          "response": []
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data._id) {",
+                  "    pm.collectionVariables.set('orderId', json.data._id);",
+                  "    pm.test('Order ID saved', function () {",
+                  "        pm.expect(pm.collectionVariables.get('orderId')).to.not.be.empty;",
+                  "    });",
+                  "}",
+                  "",
+                  "pm.test('Order status is pending', function () {",
+                  "    pm.expect(json.data.status).to.equal('pending');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"products\": [\n    {\n      \"productId\": \"69e81d17f3845bd53773ac66\",\n      \"name\": \"Rachqalik Smart Pillow Lite\",\n      \"quantity\": 1,\n      \"price\": 79.99\n    }\n  ],\n  \"total\": 79.99\n}" },
+                "url": { "raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"] }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Order created successfully\",\n  \"data\": {\n    \"_id\": \"69e81d5744a5a1eb74f45a18\",\n    \"userId\": \"69e81cf84a978fb796e6df7f\",\n    \"products\": [\n      {\n        \"productId\": \"69e81d17f3845bd53773ac66\",\n        \"name\": \"Rachqalik Smart Pillow Lite\",\n        \"quantity\": 1,\n        \"price\": 79.99\n      }\n    ],\n    \"total\": 79.99,\n    \"status\": \"pending\",\n    \"createdAt\": \"2026-04-22T00:59:03.668Z\",\n    \"updatedAt\": \"2026-04-22T00:59:03.668Z\"\n  }\n}"
+            },
+            {
+              "name": "400 Product Not Found",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"products\": [\n    {\n      \"productId\": \"507f1f77bcf86cd799439011\",\n      \"name\": \"Ghost Product\",\n      \"quantity\": 1,\n      \"price\": 10\n    }\n  ],\n  \"total\": 10\n}" },
+                "url": { "raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"One or more products not found\"\n}"
+            },
+            {
+              "name": "400 Insufficient Stock",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"products\": [\n    {\n      \"productId\": \"69e81d17f3845bd53773ac66\",\n      \"name\": \"Rachqalik Smart Pillow Lite\",\n      \"quantity\": 9999,\n      \"price\": 79.99\n    }\n  ],\n  \"total\": 799900\n}" },
+                "url": { "raw": "{{baseUrl}}/api/orders", "host": ["{{baseUrl}}"], "path": ["api", "orders"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Insufficient stock for \\\"Rachqalik Smart Pillow Lite\\\" (available: 118)\"\n}"
+            }
+          ]
         },
         {
           "name": "Get Orders by User",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": {
               "raw": "{{baseUrl}}/api/orders/user/{{userId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "orders",
-                "user",
-                "{{userId}}"
-              ]
-            }
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "user", "{{userId}}"]
+            },
+            "description": "Returns all orders placed by a specific user, sorted newest first.\n\n**Access control:**\n- A user can only fetch their own orders (token `userId` must match the `:id` param)\n- An admin can fetch orders for any user\n\nReturns 403 if a non-admin user tries to fetch another user's orders.\n\nRequires: `Authorization: Bearer {{token}}`"
           },
-          "response": []
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has count and data array', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('count');",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": { "raw": "{{baseUrl}}/api/orders/user/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "orders", "user", "{{userId}}"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"count\": 1,\n  \"data\": [\n    {\n      \"_id\": \"69e81d5744a5a1eb74f45a18\",\n      \"userId\": \"69e81cf84a978fb796e6df7f\",\n      \"products\": [\n        {\n          \"productId\": \"69e81d17f3845bd53773ac66\",\n          \"name\": \"Rachqalik Smart Pillow Lite\",\n          \"quantity\": 1,\n          \"price\": 79.99\n        }\n      ],\n      \"total\": 79.99,\n      \"status\": \"pending\",\n      \"createdAt\": \"2026-04-22T00:59:03.668Z\",\n      \"updatedAt\": \"2026-04-22T00:59:03.668Z\"\n    }\n  ]\n}"
+            },
+            {
+              "name": "403 Forbidden",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": { "raw": "{{baseUrl}}/api/orders/user/69e81d41365ddc3656e18ecc", "host": ["{{baseUrl}}"], "path": ["api", "orders", "user", "69e81d41365ddc3656e18ecc"] }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Forbidden\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Order Status (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"paid\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/{{orderId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "{{orderId}}", "status"]
+            },
+            "description": "Updates the status of an existing order. Admin access only.\n\n**Accepted status values:**\n- `pending` — order created, awaiting payment\n- `paid` — payment confirmed\n- `shipped` — order dispatched\n\nReturns 400 for any value outside of those three. Returns 403 if the requester is not an admin.\n\nRequires: `Authorization: Bearer {{adminToken}}`"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Order status updated', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "    pm.expect(['pending', 'paid', 'shipped']).to.include(json.data.status);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK — Status Updated to Paid",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"status\": \"paid\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "status"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Order status updated\",\n  \"data\": {\n    \"_id\": \"69e81d5744a5a1eb74f45a18\",\n    \"userId\": \"69e81cf84a978fb796e6df7f\",\n    \"products\": [\n      {\n        \"productId\": \"69e81d17f3845bd53773ac66\",\n        \"name\": \"Rachqalik Smart Pillow Lite\",\n        \"quantity\": 1,\n        \"price\": 79.99\n      }\n    ],\n    \"total\": 79.99,\n    \"status\": \"paid\",\n    \"createdAt\": \"2026-04-22T00:59:03.668Z\",\n    \"updatedAt\": \"2026-04-22T00:59:17.218Z\"\n  }\n}"
+            },
+            {
+              "name": "400 Invalid Status",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{adminToken}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"status\": \"delivered\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "status"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"status must be one of: pending, paid, shipped\"\n}"
+            },
+            {
+              "name": "403 Not Admin",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"status\": \"paid\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/orders/{{orderId}}/status", "host": ["{{baseUrl}}"], "path": ["api", "orders", "{{orderId}}", "status"] }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Forbidden: admin access required\"\n}"
+            }
+          ]
         }
       ]
     },
     {
       "name": "Sleep",
+      "description": "Sleep tracking endpoints.\n\nAll sleep endpoints require authentication and an active plan.\n\n**Plan rules:**\n- `free` users: access allowed during the first 15 days after account creation\n- `premium` users: unlimited access\n- Expired free users receive: `403 Free trial expired after 15 days. Upgrade to premium to continue.`",
       "item": [
         {
-          "name": "Create Sleep Data",
+          "name": "Log Sleep Entry",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"duration\": 7.8,\n  \"quality\": \"good\",\n  \"date\": \"{{$isoTimestamp}}\"\n}"
+              "raw": "{\n  \"duration\": 7.5,\n  \"quality\": \"good\",\n  \"date\": \"{{$isoTimestamp}}\"\n}",
+              "options": { "raw": { "language": "json" } }
             },
             "url": {
               "raw": "{{baseUrl}}/api/sleep",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "sleep"
-              ]
-            }
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sleep"]
+            },
+            "description": "Logs a single sleep entry for the authenticated user.\n\n**Required fields:**\n- `duration` (number): hours of sleep, e.g. `7.5`\n- `quality` (string): must be one of `bad`, `average`, `good`\n\n**Optional fields:**\n- `date` (ISO 8601 string): defaults to the current timestamp if omitted\n\nRequires: `Authorization: Bearer {{token}}` and an active plan."
           },
-          "response": []
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Sleep data saved with correct fields', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.data).to.have.all.keys('_id', 'userId', 'duration', 'quality', 'date', 'createdAt', 'updatedAt', '__v');",
+                  "    pm.expect(['bad', 'average', 'good']).to.include(json.data.quality);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"duration\": 7.5,\n  \"quality\": \"good\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/sleep", "host": ["{{baseUrl}}"], "path": ["api", "sleep"] }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Sleep data created successfully\",\n  \"data\": {\n    \"_id\": \"69e81d6e44a5a1eb74f45a19\",\n    \"userId\": \"69e81cf84a978fb796e6df7f\",\n    \"duration\": 7.5,\n    \"quality\": \"good\",\n    \"date\": \"2026-04-22T00:59:26.355Z\",\n    \"createdAt\": \"2026-04-22T00:59:26.355Z\",\n    \"updatedAt\": \"2026-04-22T00:59:26.355Z\",\n    \"__v\": 0\n  }\n}"
+            },
+            {
+              "name": "400 Invalid Quality",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{token}}" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"duration\": 7,\n  \"quality\": \"excellent\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/sleep", "host": ["{{baseUrl}}"], "path": ["api", "sleep"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"quality must be one of: bad, average, good\"\n}"
+            },
+            {
+              "name": "403 Trial Expired",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer <expired-user-token>" }
+                ],
+                "body": { "mode": "raw", "raw": "{\n  \"duration\": 7,\n  \"quality\": \"good\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/sleep", "host": ["{{baseUrl}}"], "path": ["api", "sleep"] }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Free trial expired after 15 days. Upgrade to premium to continue.\"\n}"
+            }
+          ]
         },
         {
-          "name": "Get Sleep by User",
+          "name": "Get Sleep History",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
             "url": {
               "raw": "{{baseUrl}}/api/sleep/user/{{userId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "sleep",
-                "user",
-                "{{userId}}"
-              ]
-            }
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sleep", "user", "{{userId}}"]
+            },
+            "description": "Returns all sleep records for a specific user, sorted by date descending (most recent first).\n\n**Access control:**\n- A user can only fetch their own records\n- An admin can fetch records for any user\n\nRequires: `Authorization: Bearer {{token}}` and an active plan."
           },
-          "response": []
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has count and data array', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('count');",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "    pm.expect(json.data.length).to.equal(json.count);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": { "raw": "{{baseUrl}}/api/sleep/user/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "sleep", "user", "{{userId}}"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"count\": 3,\n  \"data\": [\n    {\n      \"_id\": \"69e81d6e44a5a1eb74f45a1a\",\n      \"userId\": \"69e81cf84a978fb796e6df7f\",\n      \"duration\": 5,\n      \"quality\": \"bad\",\n      \"date\": \"2026-04-22T00:59:26.392Z\",\n      \"createdAt\": \"2026-04-22T00:59:26.392Z\",\n      \"updatedAt\": \"2026-04-22T00:59:26.392Z\"\n    },\n    {\n      \"_id\": \"69e81d6e44a5a1eb74f45a19\",\n      \"userId\": \"69e81cf84a978fb796e6df7f\",\n      \"duration\": 8,\n      \"quality\": \"good\",\n      \"date\": \"2026-04-22T00:59:26.355Z\",\n      \"createdAt\": \"2026-04-22T00:59:26.355Z\",\n      \"updatedAt\": \"2026-04-22T00:59:26.355Z\"\n    },\n    {\n      \"_id\": \"69e81d6e44a5a1eb74f45a1b\",\n      \"userId\": \"69e81cf84a978fb796e6df7f\",\n      \"duration\": 6.5,\n      \"quality\": \"average\",\n      \"date\": \"2026-04-20T22:00:00.000Z\",\n      \"createdAt\": \"2026-04-22T00:59:26.443Z\",\n      \"updatedAt\": \"2026-04-22T00:59:26.443Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Sleep Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/sleep/stats/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sleep", "stats", "{{userId}}"]
+            },
+            "description": "Returns aggregated sleep statistics for a specific user.\n\n**Response includes:**\n- `totalRecords`: total number of sleep entries logged\n- `avgDuration`: average sleep hours (rounded to 1 decimal)\n- `minDuration`: shortest sleep session logged\n- `maxDuration`: longest sleep session logged\n- `qualityBreakdown`: count of `good`, `average`, and `bad` nights\n- `last7Days`: full records from the past 7 days, sorted oldest to newest (for charting)\n\nIf the user has no records, returns zeroed-out stats with an empty `last7Days` array.\n\nRequires: `Authorization: Bearer {{token}}` and an active plan."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Stats response has required fields', function () {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.expect(data).to.have.all.keys(",
+                  "        'totalRecords', 'avgDuration', 'minDuration', 'maxDuration',",
+                  "        'qualityBreakdown', 'last7Days'",
+                  "    );",
+                  "    pm.expect(data.qualityBreakdown).to.have.all.keys('good', 'average', 'bad');",
+                  "    pm.expect(data.last7Days).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": { "raw": "{{baseUrl}}/api/sleep/stats/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "sleep", "stats", "{{userId}}"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"totalRecords\": 3,\n    \"avgDuration\": 6.5,\n    \"minDuration\": 5,\n    \"maxDuration\": 8,\n    \"qualityBreakdown\": {\n      \"good\": 1,\n      \"average\": 1,\n      \"bad\": 1\n    },\n    \"last7Days\": [\n      {\n        \"_id\": \"69e81d6e44a5a1eb74f45a1b\",\n        \"userId\": \"69e81cf84a978fb796e6df7f\",\n        \"duration\": 6.5,\n        \"quality\": \"average\",\n        \"date\": \"2026-04-20T22:00:00.000Z\"\n      },\n      {\n        \"_id\": \"69e81d6e44a5a1eb74f45a19\",\n        \"userId\": \"69e81cf84a978fb796e6df7f\",\n        \"duration\": 8,\n        \"quality\": \"good\",\n        \"date\": \"2026-04-22T00:59:26.355Z\"\n      },\n      {\n        \"_id\": \"69e81d6e44a5a1eb74f45a1a\",\n        \"userId\": \"69e81cf84a978fb796e6df7f\",\n        \"duration\": 5,\n        \"quality\": \"bad\",\n        \"date\": \"2026-04-22T00:59:26.392Z\"\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "200 OK — No Records",
+              "originalRequest": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+                "url": { "raw": "{{baseUrl}}/api/sleep/stats/{{userId}}", "host": ["{{baseUrl}}"], "path": ["api", "sleep", "stats", "{{userId}}"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"totalRecords\": 0,\n    \"avgDuration\": 0,\n    \"minDuration\": 0,\n    \"maxDuration\": 0,\n    \"qualityBreakdown\": {\n      \"good\": 0,\n      \"average\": 0,\n      \"bad\": 0\n    },\n    \"last7Days\": []\n  }\n}"
+            }
+          ]
         }
       ]
     }
   ],
   "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:5000"
-    },
-    {
-      "key": "token",
-      "value": ""
-    },
-    {
-      "key": "adminToken",
-      "value": ""
-    },
-    {
-      "key": "userId",
-      "value": ""
-    },
-    {
-      "key": "sampleProductId",
-      "value": ""
-    },
-    {
-      "key": "loginEmail",
-      "value": "testuser@rachqalik.com"
-    },
-    {
-      "key": "loginPassword",
-      "value": "Password123!"
-    }
+    { "key": "baseUrl",       "value": "http://localhost:5000",  "type": "string" },
+    { "key": "token",         "value": "",                       "type": "string" },
+    { "key": "adminToken",    "value": "",                       "type": "string" },
+    { "key": "userId",        "value": "",                       "type": "string" },
+    { "key": "productId",     "value": "",                       "type": "string" },
+    { "key": "newProductId",  "value": "",                       "type": "string" },
+    { "key": "orderId",       "value": "",                       "type": "string" },
+    { "key": "loginEmail",    "value": "test@example.com",       "type": "string" },
+    { "key": "loginPassword", "value": "password123",            "type": "string" },
+    { "key": "adminEmail",    "value": "admin@example.com",      "type": "string" },
+    { "key": "adminPassword", "value": "admin1234",              "type": "string" }
   ]
 }
