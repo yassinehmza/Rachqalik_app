@@ -1,0 +1,53 @@
+.layered-text {
+  margin-inline: 0;
+  padding: 0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -2px;
+  color: #fff;
+  cursor: pointer;
+  font-size: var(--lt-font-size, 72px);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.layered-text-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.layered-text-item {
+  overflow: hidden;
+  position: relative;
+}
+
+.layered-text-item-even {
+  transform-origin: left center;
+}
+
+.layered-text-item-odd {
+  transform-origin: left center;
+}
+
+.layered-text-line {
+  margin: 0;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .layered-text {
+    font-size: var(--lt-md-font-size, 36px);
+    letter-spacing: -1px;
+    padding: 1rem 0;
+  }
+
+  .layered-text-line {
+    line-height: 30px !important;
+  }
+}
