@@ -1,21 +1,36 @@
+import { useNavigate } from 'react-router-dom'
 import { AnimatedNavFramer } from './ui/navigation-menu'
+import { useAuth } from '../context/AuthContext'
 
-function Navbar() {
-  const navItems = [
-    { name: 'Accueil', href: '/' },
-    { name: 'Rachqalik', href: '/#features' },
-    { name: 'Contact', href: '/#contact' },
-    { name: 'Connexion', href: '/login' },
+export default function Navbar() {
+  const { isAuthenticated, user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const publicNavItems = [
+    { name: 'Home', href: '/' },
+    { name: 'Shop', href: '/shop' },
+    { name: 'About', href: '/#insights' },
   ]
+
+  const authNavItems = [
+    { name: 'Home', href: '/' },
+    { name: 'Shop', href: '/shop' },
+    { name: 'Dashboard', href: '/dashboard' },
+  ]
+
+  const handleLogout = () => {
+    logout()
+    navigate('/')
+  }
 
   return (
     <AnimatedNavFramer
-      navItems={navItems}
-      ctaLabel="Inscription"
-      ctaHref="/register"
+      navItems={isAuthenticated ? authNavItems : publicNavItems}
+      ctaLabel={isAuthenticated ? `Hi, ${user?.name?.split(' ')[0]}` : 'Sign In'}
+      ctaHref={isAuthenticated ? '/dashboard' : '/login'}
       logoLabel="Rachqalik"
+      isAuthenticated={isAuthenticated}
+      onLogout={handleLogout}
     />
   )
 }
-
-export default Navbar

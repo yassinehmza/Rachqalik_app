@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 
 import Navbar from '../components/Navbar'
 import AppLayout from '../components/layout/AppLayout'
+import AdminLayout from '../components/layout/AdminLayout'
 import ProtectedRoute from './ProtectedRoute'
 import AdminRoute from './AdminRoute'
 
@@ -11,13 +12,13 @@ import Home from '../pages/Home'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
 import ForgotPassword from '../pages/ForgotPassword'
+import Shop from '../pages/shop/Shop'
+import ProductDetail from '../pages/shop/ProductDetail'
 
 import Dashboard from '../pages/Dashboard'
 import SleepLog from '../pages/sleep/SleepLog'
 import SleepHistory from '../pages/sleep/SleepHistory'
 import SleepAnalytics from '../pages/sleep/SleepAnalytics'
-import Shop from '../pages/shop/Shop'
-import ProductDetail from '../pages/shop/ProductDetail'
 import Cart from '../pages/Cart'
 import Orders from '../pages/Orders'
 import Profile from '../pages/Profile'
@@ -76,31 +77,30 @@ export default function AppRouter() {
       >
         <Route path="/dashboard" element={<Dashboard />} />
 
+        <Route path="/shop" element={<Shop />} />
+        <Route path="/shop/:id" element={<ProductDetail />} />
+
         <Route path="/sleep/log" element={<SleepLog />} />
         <Route path="/sleep/history" element={<SleepHistory />} />
         <Route path="/sleep/analytics" element={<SleepAnalytics />} />
-
-        {/* Shop inside the sidebar layout — no navbar overlay issue */}
-        <Route path="/shop" element={<Shop />} />
-        <Route path="/shop/:id" element={<ProductDetail />} />
 
         <Route path="/cart" element={<Cart />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/upgrade" element={<Upgrade />} />
+      </Route>
 
-        <Route
-          path="/admin"
-          element={<AdminRoute><AdminDashboard /></AdminRoute>}
-        />
-        <Route
-          path="/admin/products"
-          element={<AdminRoute><AdminProducts /></AdminRoute>}
-        />
-        <Route
-          path="/admin/orders"
-          element={<AdminRoute><AdminOrders /></AdminRoute>}
-        />
+      {/* Admin — completely separate layout */}
+      <Route
+        element={
+          <AdminRoute>
+            <AdminLayout />
+          </AdminRoute>
+        }
+      >
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/products" element={<AdminProducts />} />
+        <Route path="/admin/orders" element={<AdminOrders />} />
       </Route>
     </Routes>
   )

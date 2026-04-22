@@ -1,57 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@theme {
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
-}
-
-@layer base {
-  :root {
-    --background: 240 10% 4%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 4%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 4%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-    --radius: 0.5rem;
-  }
-}
-
+/* ── Typography ─────────────────────────────────────────── */
 :root {
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -69,14 +18,15 @@
 body {
   margin: 0;
   min-width: 320px;
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
+  background-color: #080808;
+  color: #ffffff;
 }
 
 #root {
   min-height: 100vh;
 }
 
+/* ── Landing page helpers (home / public routes) ─────────── */
 .container {
   width: min(1100px, 92%);
   margin: 0 auto;
@@ -95,9 +45,7 @@ body {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.btn:hover {
-  transform: translateY(-1px);
-}
+.btn:hover { transform: translateY(-1px); }
 
 .btn-primary {
   background: #ffffff;
@@ -145,13 +93,8 @@ body {
   font-weight: 500;
 }
 
-.site-links-center {
-  justify-content: center;
-}
-
-.site-links-right {
-  justify-content: flex-end;
-}
+.site-links-center { justify-content: center; }
+.site-links-right  { justify-content: flex-end; }
 
 .ghost-btn {
   padding: 0.45rem 0.9rem;
@@ -225,9 +168,7 @@ body {
   justify-content: flex-start;
 }
 
-.hero-content .layered-text {
-  transform: translateY(132px);
-}
+.hero-content .layered-text { transform: translateY(132px); }
 
 .hero-kicker {
   margin: 0 0 0.7rem;
@@ -309,19 +250,10 @@ body {
   box-shadow: 0 12px 25px rgba(15, 23, 42, 0.06);
 }
 
-.feature-card h3 {
-  margin: 0;
-  color: #1e1b4b;
-}
+.feature-card h3 { margin: 0; color: #1e1b4b; }
+.feature-card p  { margin: 0.45rem 0 0; color: #475569; }
 
-.feature-card p {
-  margin: 0.45rem 0 0;
-  color: #475569;
-}
-
-.contact-section {
-  margin-top: 1.1rem;
-}
+.contact-section { margin-top: 1.1rem; }
 
 .contact-card {
   background: #ffffff;
@@ -330,20 +262,9 @@ body {
   padding: 1rem;
 }
 
-.contact-card h2 {
-  margin: 0;
-}
-
-.contact-card p {
-  margin: 0.4rem 0;
-  color: #475569;
-}
-
-.contact-card a {
-  text-decoration: none;
-  color: #5b21b6;
-  font-weight: 600;
-}
+.contact-card h2 { margin: 0; }
+.contact-card p  { margin: 0.4rem 0; color: #475569; }
+.contact-card a  { text-decoration: none; color: #5b21b6; font-weight: 600; }
 
 .insights-section {
   background: #0d0d0d;
@@ -351,9 +272,7 @@ body {
   color: #ffffff;
 }
 
-.insights-content {
-  max-width: 800px;
-}
+.insights-content { max-width: 800px; }
 
 .insights-title {
   font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
@@ -378,9 +297,7 @@ body {
   }
 
   .site-links-center,
-  .site-links-right {
-    justify-content: flex-start;
-  }
+  .site-links-right { justify-content: flex-start; }
 
   .hero-grid {
     grid-template-columns: 1fr;
@@ -389,24 +306,14 @@ body {
     gap: 1.2rem;
   }
 
-  .hero-image-wrap {
-    justify-content: center;
-  }
+  .hero-image-wrap { justify-content: center; }
 
   .hero-image {
     width: min(520px, 100%);
     transform: translateX(0);
   }
 
-  .hero-content .layered-text {
-    transform: translateY(58px);
-  }
-
-  .hero-glow {
-    right: auto;
-  }
-
-  .features-section {
-    grid-template-columns: 1fr;
-  }
+  .hero-content .layered-text { transform: translateY(58px); }
+  .hero-glow { right: auto; }
+  .features-section { grid-template-columns: 1fr; }
 }

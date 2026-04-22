@@ -1,19 +1,29 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import SignInForm from '../components/ui/sign-in-form'
 
-function Login() {
+export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const { login } = useAuth()
+  const navigate = useNavigate()
 
   const onSubmit = (e) => {
     e.preventDefault()
     setError('')
-    setLoading(true)
 
-    window.setTimeout(() => {
-      setLoading(false)
-    }, 700)
+    if (!form.email || !form.password) {
+      setError('Please fill in all fields.')
+      return
+    }
+
+    setLoading(true)
+    setTimeout(() => {
+      login({ email: form.email })
+      navigate('/dashboard')
+    }, 600)
   }
 
   return (
@@ -28,5 +38,3 @@ function Login() {
     </main>
   )
 }
-
-export default Login

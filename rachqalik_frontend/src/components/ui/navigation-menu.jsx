@@ -1,6 +1,7 @@
 import * as React from 'react'
+import { Link } from 'react-router-dom'
 import { motion, useMotionValueEvent, useScroll } from 'framer-motion'
-import { Menu, Navigation } from 'lucide-react'
+import { LogOut, Menu, Navigation } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import './navigation-menu.css'
 
@@ -65,6 +66,8 @@ export function AnimatedNavFramer({
   ctaLabel = 'Essai gratuit',
   ctaHref = '/register',
   logoLabel = 'Rachqalik',
+  isAuthenticated = false,
+  onLogout,
 }) {
   const [isExpanded, setExpanded] = React.useState(true)
 
@@ -113,27 +116,37 @@ export function AnimatedNavFramer({
 
         <motion.div className={cn('anf-links', !isExpanded && 'anf-links--disabled')}>
           {navItems.map((item) => (
-            <motion.a
-              key={item.name}
-              href={item.href}
-              variants={itemVariants}
-              onClick={(e) => e.stopPropagation()}
-              className="anf-link"
-            >
-              {item.name}
-            </motion.a>
+            <motion.div key={item.name} variants={itemVariants}>
+              <Link
+                to={item.href}
+                onClick={(e) => e.stopPropagation()}
+                className="anf-link"
+              >
+                {item.name}
+              </Link>
+            </motion.div>
           ))}
         </motion.div>
 
-        <a
-          href={ctaHref}
-          className={cn(
-            'anf-cta',
-            !isExpanded && 'anf-cta--hidden',
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+          <Link
+            to={ctaHref}
+            className={cn('anf-cta', !isExpanded && 'anf-cta--hidden')}
+          >
+            {ctaLabel}
+          </Link>
+          {isAuthenticated && onLogout && (
+            <motion.button
+              variants={itemVariants}
+              onClick={(e) => { e.stopPropagation(); onLogout() }}
+              className={cn('anf-cta', !isExpanded && 'anf-cta--hidden')}
+              title="Sign out"
+              style={{ padding: '0 0.7rem', marginRight: '0.35rem' }}
+            >
+              <LogOut style={{ width: '0.85rem', height: '0.85rem' }} />
+            </motion.button>
           )}
-        >
-          {ctaLabel}
-        </a>
+        </div>
 
         <div className="anf-center-icon-wrap">
           <motion.div variants={collapsedIconVariants} animate={isExpanded ? 'expanded' : 'collapsed'}>
