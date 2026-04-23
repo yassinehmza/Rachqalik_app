@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Crown, Flame, Star, ShoppingCart, CheckCircle, X, Filter, RotateCcw } from 'lucide-react'
+import { Search, Crown, Flame, Star, ShoppingCart, CheckCircle, X, Filter, RotateCcw, Package } from 'lucide-react'
 import { MOCK_PRODUCTS, PRODUCT_CATEGORIES } from '../../data/mockData'
 import { useCart } from '../../context/CartContext'
 import { useAuth } from '../../context/AuthContext'
@@ -45,7 +45,19 @@ function ProductCard({ product, onAdd, added }) {
           />
         </Link>
 
-        {product.bestSeller && (
+        {product.pack === 'standard' && (
+          <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-[#4ade80] text-black px-2 py-0.5 text-[10px] font-semibold">
+            <Package className="w-2.5 h-2.5" />
+            Pack Standard
+          </span>
+        )}
+        {product.pack === 'premium' && (
+          <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#FF9F1A] to-[#FFD700] text-black px-2 py-0.5 text-[10px] font-semibold">
+            <Crown className="w-2.5 h-2.5" />
+            Pack Premium
+          </span>
+        )}
+        {!product.pack && product.bestSeller && (
           <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-[#FF9F1A] text-black px-2 py-0.5 text-[10px] font-semibold">
             <Flame className="w-2.5 h-2.5" />
             Best Seller

@@ -27,6 +27,7 @@ import Upgrade from '../pages/Upgrade'
 import AdminDashboard from '../pages/admin/AdminDashboard'
 import AdminProducts from '../pages/admin/AdminProducts'
 import AdminOrders from '../pages/admin/AdminOrders'
+import AdminCustomers from '../pages/admin/AdminCustomers'
 
 function PublicOnlyRoute({ children }) {
   const { isAuthenticated } = useAuth()
@@ -101,6 +102,7 @@ export default function AppRouter() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/products" element={<AdminProducts />} />
         <Route path="/admin/orders" element={<AdminOrders />} />
+        <Route path="/admin/customers" element={<AdminCustomers />} />
       </Route>
     </Routes>
   )

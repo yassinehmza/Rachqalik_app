@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, ShoppingCart, Minus, Plus, Star, CheckCircle, Shield, Truck, RefreshCcw } from 'lucide-react'
+import { ArrowLeft, ShoppingCart, Minus, Plus, Star, CheckCircle, Shield, Truck, RefreshCcw, Crown, Package } from 'lucide-react'
 import { MOCK_PRODUCTS } from '../../data/mockData'
 import { useCart } from '../../context/CartContext'
 import PageTransition from '../../components/layout/PageTransition'
@@ -102,14 +102,37 @@ export default function ProductDetail() {
             transition={{ duration: 0.35, delay: 0.1 }}
             className="flex flex-col gap-5"
           >
+            {/* Pack badge */}
+            {product.pack === 'standard' && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#4ade80]/15 border border-[#4ade80]/30 text-[#4ade80] px-3 py-1 text-xs font-semibold w-fit">
+                <Package className="w-3 h-3" />
+                Pack Standard — Application gratuite incluse
+              </span>
+            )}
+            {product.pack === 'premium' && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#FF9F1A]/20 to-[#FFD700]/20 border border-[#FF9F1A]/40 text-[#FF9F1A] px-3 py-1 text-xs font-semibold w-fit">
+                <Crown className="w-3 h-3" />
+                Pack Premium — Analyses avancées + Coaching sommeil
+              </span>
+            )}
+
             {/* Rating */}
             <div className="flex items-center gap-2">
               <div className="flex gap-0.5">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-3.5 w-3.5 fill-[#FF9F1A] text-[#FF9F1A]" />
+                  <Star
+                    key={i}
+                    className={`h-3.5 w-3.5 ${
+                      i < Math.floor(product.rating ?? 4.8)
+                        ? 'fill-[#FF9F1A] text-[#FF9F1A]'
+                        : 'fill-white/10 text-white/10'
+                    }`}
+                  />
                 ))}
               </div>
-              <span className="text-xs text-white/40">4.8 · 128 reviews</span>
+              <span className="text-xs text-white/40">
+                {product.rating ?? 4.8} · {(product.reviewCount ?? 128).toLocaleString()} reviews
+              </span>
             </div>
 
             {/* Title + description */}
